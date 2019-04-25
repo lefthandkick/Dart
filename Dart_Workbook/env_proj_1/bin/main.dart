@@ -12,27 +12,25 @@ Create a Class and Mixin that together:
 Next Exersize will add method to compare instances for any
 changes in Platform info.  Aka, what has changed?
 */
+import 'dart:async';
 import 'package:env_proj/os_platform.dart';
-import 'package:env_proj/pg_add_env.dart';
+import 'package:env_proj/pg_env.dart';
 
-
-main(List<String> arguments) {
+Future main(List<String> arguments) async {
   print(" ---- The Start ----");
   
-  OS_Platform startEnv = OS_Platform();
+  // OS_Platform  = OS_Platform();
+  // connectDB_Update_Env(macbook_1);
 
-  Map<String, dynamic> enVars = startEnv.getEnv();
+  MyOS_Platform myMBP = MyOS_Platform();
+  //print(myMBP.toString() );
 
-  connectDB_Update_Env(enVars);
-
-  print(" ---- The End ----");
-
-  // print(startEnv.toString(option: 'OS') );
-  // print(startEnv.toString(option: 'ENV_PATH') );
-  // print(startEnv.toString(option: 'ENV') );
-  // print(startEnv.toString(option: 'PATH') );
+  //add to postgress
+  MyOSDatabase myMBPdb = MyOSDatabase(sysName: 'zaatas',  dbName: 'os_env', 
+                                       action: 'insert', platformInfo: myMBP.init_values);
+  
+  print(' ---- The End ----');
 }
-
 
 
 

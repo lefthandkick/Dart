@@ -1,101 +1,89 @@
 
+// capture os info for the purpose of adding to 
+// postres tables
+//
 import 'dart:io';
 
-// mixin
-class OS_Env_Path {
-  List<String>         _env_paths = List<String>(); 
-  Map<String, dynamic> _env_vars  = Map<String, dynamic>(); 
 
-  Map<String, dynamic> _platform_env  = Platform.environment;
+mixin OS_Platform_Tools {
+  // methods
+  List<dynamic> _snapShot() {
 
-  // put env vars and path into individual map and list
-  // also use as a constructor..kinda.  The can call this fn in their
-  // constructor 
-  void _parseEnv() {
-    this._platform_env.forEach( (env, val) {
-    
-          if (env == 'PATH') {
-            val.toString().split(":").forEach( (path_val) =>
-              this._env_paths.add(path_val)
-            );
-          } else {
-              this._env_vars[env] = val;
-          };
-     });
-  }
+    int time  = 0;
+    int env   = 1; 
+    int props = 2; 
+    int paths = 3; 
 
-  Map<String, dynamic> getEnv() {
-    return _env_vars;
-  }
+    List platformSnapshot = [
+      String,                  // timestamp
+      Map<String, dynamic>(),  // env
+      Map<String, dynamic>(),  // props 
+      List<String>()           // paths
+    ];
 
-  String toStringEnv() {
-    String _tostring = '';
-    if(this._env_vars.isEmpty) return 'Environment Obj is Empty: Run _parseEnv() \n';
-    
-    _env_vars.forEach( (item, value) {
-      _tostring += '${item} -> ${value} \n';
-    });
-    _tostring += '\n';
+    // time is not part of Platform, will use for key in postgress
+    platformSnapshot[time]                    = DateTime.now().toString();
 
-    return _tostring;
+    platformSnapshot[props]['OS']             = Platform.operatingSystem;
+    platformSnapshot[props]['OS_Version']     = Platform.operatingSystemVersion;
+    platformSnapshot[props]['Dart_Ver']       = Platform.version;
+    platformSnapshot[props]['Exec_Path']      = Platform.executable;
+    platformSnapshot[props]['Exec_Res_Path']  = Platform.resolvedExecutable;
+    platformSnapshot[props]['Exec_Flags']     = Platform.executableArguments;
+    platformSnapshot[props]['Local_Name']     = Platform.localeName;
+    platformSnapshot[props]['Path_Separator'] = Platform.pathSeparator;
+    platformSnapshot[props]['URI Script']     = Platform.script;
+
+    List env_path = _extractEnvPath();
+    // is there a way to destructure ?
+    platformSnapshot[env]   = env_path[0];
+    platformSnapshot[paths] = env_path[1];
+
+    return platformSnapshot;
   }
   
-  String toStringPath() {
-    String _tostring = '';
-    if(this._env_paths.isEmpty) return 'Path Obj is Empty: Run _parseEnv() \n';
+  List _extractEnvPath() {
+    List env_path = [
+      Map<String, dynamic>(), 
+      List<String>()
+    ];
 
-    _env_paths.forEach( (item) {
-      _tostring += '${item} \n';
+    Platform.environment.forEach( (env, val) {
+      if (env == 'PATH') {
+          val.toString().split(":").forEach( (path_str) =>
+          env_path[1].add(path_str));
+      } else {
+          env_path[0][env] = val;
+      };
     });
-    _tostring += '\n';
-
-    return _tostring;
-  }
-
-  String toString() {
-    String _tostring = '';
-    _tostring += this.toStringEnv();
-    _tostring += this.toStringPath();
-    return _tostring; 
+    return env_path;
   }
 }
+// end mixin
 
+class MyOS_Platform with OS_Platform_Tools {
 
-class OS_Platform with OS_Env_Path {
-  Map<String, dynamic> _env_os    = Map<String, dynamic>(); 
-  
-  OS_Platform() {
-   this._env_os['Timestamp']      = DateTime.now();
-   this._env_os['OS']             = Platform.operatingSystem;
-   this._env_os['OS_Ver']         = Platform.operatingSystemVersion;
-   this._env_os['Dart_Ver']       = Platform.version;
-   this._env_os['Exec_Path']      = Platform.executable;
-   this._env_os['Exec_Res_Path']  = Platform.resolvedExecutable;
-   this._env_os['Exec_Flags']     = Platform.executableArguments;
-   this._env_os['Local_Name']     = Platform.localeName;
-   this._env_os['Path_Separator'] = Platform.pathSeparator;
-   this._env_os['URI Script']     = Platform.script;
-   
-   this._parseEnv();
+  List<dynamic> init_values = List<dynamic>();
+
+  MyOS_Platform() {
+    this.init_values = super._snapShot();
   }
 
   @override
-  String toString({String option = 'None'}) {
-    String _tostring = '';
+  String toString() {
+      String tostring = '';
+      // timestamp
+      tostring += '\n ------[ ${this.init_values[0]} ]------ \n';
 
-    if(option == 'ENV_PATH' ) 
-      _tostring += super.toString();
-    else if (option == 'PATH') 
-      _tostring += super.toStringPath();
-    else if(option == 'ENV')
-      _tostring += super.toStringEnv();
-    else if(option == 'OS') {
-      _env_os.forEach( (item, value) {
-        _tostring += '${item} -> ${value} \n';
-      });
-    }else{
-      _tostring = 'toString() Options: ENV_PATH / PATH / ENV / OS';
+      tostring += '\n ------[ Environment Variables ]------ \n';
+      this.init_values[1].forEach( (k1, v1) => tostring += '${k1} -> ${v1} \n' );
+
+      tostring += '\n ------[ Platform Variables ]------ \n';
+      this.init_values[2].forEach( (k2, v2 ) => tostring += '${k2} -> ${v2} \n' );
+    
+      tostring += '\n ------[ \$PATH ]------ \n';
+      this.init_values[3].forEach( (v) => tostring += '${v} \n' );
+
+      return tostring; 
     }
-    return _tostring;
   }
-}
